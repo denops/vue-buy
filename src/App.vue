@@ -1,67 +1,93 @@
 <template>
-  <div>
-    <p v-if="showName">{{name}}</p>
-    <ul>
-      <li v-for="(good,index) in goods" :key="index">
-        <span>{{good.text}}</span>
-        <span>￥{{good.price}}</span>
-        <button @click="addCart(index)">添加到购物车</button>
-      </li>
-    </ul>
-    <Cart :name="name"></Cart>
+  <div id="app">
+    <!-- <div id="nav">
+      <router-link to="/">Home</router-link> |
+      <router-link to="/about">About</router-link> |
+      <router-link to="/login">Login</router-link> |
+      <span v-if="isLogin" @click="logout">Logout</span>
+    </div> -->
+    <cube-tab-bar v-model="selectLabel" :data="tabs" @change="changeHandler" show-slider>
+      <cube-tab v-for="(item,index) in tabs" :key="index" :icon="item.icon" :label="item.value">
+        <span>{{item.label}}</span>
+        <span class="badge" v-if="item.label=='Cart'">{{cartTotal}}</span>
+      </cube-tab>
+    </cube-tab-bar>
+      <router-view/>
   </div>
 </template>
 
 <script>
-import axios from 'axios'
-import Cart from './components/Cart'
+import {mapGetters} from 'vuex'
 export default {
-  name: 'app',
-  components:{Cart},
   data() {
     return {
-      name: '开课吧课程学吧',
-      showName: true,
-      goods:[],
-      text:''
+      selectLabel:'/',
+      tabs:[
+        {label: 'Home', value:'/', icon:'cubeic-home'},
+        {label: 'Cart', value:'/cart', icon:'cubeic-mall'},
+        {label: 'Me', value:'/login', icon:'cubeic-person'},
+      ]
+    }
+  },
+  computed: {
+    ...mapGetters({
+      cartTotal: 'cartTotal'
+    }),
+    isLogin() {
+      return !!this.$store.state.token
+    }
+  },
+  methods: {
+    changeHandler(val) {
+      this.$router.push(val)
+    },
+    logout() {
+      this.$axios.get('/api/logout')
     }
   },
  async created() {
-    const res = await axios.get('/api/goods')
-    this.goods = res.data.list
-    console.log(this.goods)
-  },
-  methods: {
-    addCart(i){
-      const good = this.goods[i];
-      this.$bus.$emit('addCart',good)
-    },
-    // addCart(i){
-    //   const good = this.goods[i];
-    //   const isGood = this.cart.find(v => v.text === good.text);
-    //   if (isGood) {
-    //     this.cart.count +=1;
-    //   } else {
-    //     this.cart.push({
-    //       ...good,
-    //       active:true,
-    //       count:1
-    //     })
-    //   }
-    // },
-    addGood(){
-      if(this.text !== ""){
-        this.goods.push({text: this.text})
-        this.text = '';
-      }
+    const token = localStorage.getItem('token')
+    if (token) {
+      this.$store.commit('setToken',token)
     }
+    const ret = await this.$axios.get('/api/goods') 
   },
 }
 </script>
 
-<style scoped>
-  #app{
-    color: blueviolet;
-  }
-</style>
 
+<style lang="stylus" scope>
+
+.badge
+  display inline-block
+  background #de3529
+  color white
+  padding 5px
+  border-radius 50%
+#app
+  font-family 'Avenir', Helvetica, Arial, sans-serif
+  -webkit-font-smoothing antialiased
+  -moz-osx-font-smoothing grayscale
+  text-align center
+  color #2c3e50
+  margin-top 46px
+  padding-bottom 46px
+#nav
+  padding 30px
+  a
+    font-weight bold
+    color #2c3e50
+    &.router-link-exact-active
+      color #42b983
+
+.route-move-enter, .route-move-leave-active 
+  transform :translate(100%, 0)
+.route-move.enter-active, .route-move-leave-active
+  transition : transform 0.3s
+.cube-tab-bar
+  background-color #ffffff
+  position fixed
+  bottom 0
+  left 0
+  right 0
+</style>
